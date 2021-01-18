@@ -1,5 +1,6 @@
 from django.test import TestCase, Client
 from django.contrib.auth import get_user_model
+from django.urls import reverse
 
 from posts.models import Group, Post
 
@@ -13,7 +14,6 @@ class StaticURLTests(TestCase):
         super().setUpClass()
 
         cls.group = Group.objects.create(
-            id=1,
             title="Группа номер 1",
             slug="test_group"
         )
@@ -22,7 +22,6 @@ class StaticURLTests(TestCase):
         cls.user = User.objects.create_user(username=username)
 
         cls.post = Post.objects.create(
-            id=1,
             text="Запись номер 1",
             author=cls.user,
             group=cls.group
@@ -37,8 +36,12 @@ class StaticURLTests(TestCase):
             "new_post.html": f"/{username}/{cls.post.id}/edit/",
         }
 
-        cls.post_view_url = f"/{cls.user.username}/{cls.post.id}/"
-        cls.post_edit_url = f"/{cls.user.username}/{cls.post.id}/edit/"
+        cls.post_view_url = reverse("post",
+                                    kwargs={"username": cls.user.username,
+                                            "post_id": cls.post.id})
+        cls.post_edit_url = reverse("post_edit",
+                                    kwargs={"username": cls.user.username,
+                                            "post_id": cls.post.id})
 
     def setUp(self):
         self.guest_client = Client()
@@ -99,7 +102,3 @@ class StaticURLTests(TestCase):
         response = visitor_client.get(StaticURLTests.post_edit_url,
                                       follow=True)
         self.assertRedirects(response, StaticURLTests.post_view_url)
-
-    def test_404(self):
-        response = self.guest_client.get("/40404040404040404040404/")
-        self.assertEqual(response.status_code, 404)

@@ -64,8 +64,7 @@ class TaskCreateFormTests(TestCase):
         self.assertTrue(Post.objects.filter(text="Новый пост").exists())
 
     def test_edit_post(self):
-        Post.objects.create(
-            id=1,
+        post = Post.objects.create(
             text="Запись номер 1",
             author=self.user
         )
@@ -75,13 +74,13 @@ class TaskCreateFormTests(TestCase):
         }
         response = self.authorized_client.post(
             reverse("post_edit", kwargs={"username": self.user.username,
-                                         "post_id": 1}),
+                                         "post_id": post.id}),
             data=form_data,
             follow=True
         )
 
         url = reverse("post", kwargs={"username": self.user.username,
-                                      "post_id": 1})
+                                      "post_id": post.id})
         self.assertRedirects(response, url)
         self.assertEqual(Post.objects.count(), 1)
         self.assertTrue(Post.objects.filter(text="Измененный текст").exists())

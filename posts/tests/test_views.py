@@ -25,7 +25,6 @@ class PostPagesTests(TestCase):
         cls.user = User.objects.create_user(username="TestTestov")
 
         cls.group = Group.objects.create(
-            id=1,
             title="Группа номер 1",
             slug="test_group"
         )
@@ -44,7 +43,6 @@ class PostPagesTests(TestCase):
         )
 
         cls.post = Post.objects.create(
-            id=1,
             text="Запись номер 1",
             author=cls.user,
             group=cls.group,
@@ -63,20 +61,16 @@ class PostPagesTests(TestCase):
         self.authorized_client.force_login(PostPagesTests.user)
 
     def test_pages_uses_correct_template(self):
+        username = PostPagesTests.user.username
+        post_id = PostPagesTests.post.id
         templates_page_names = {
             "index.html": reverse("index"),
-            "group.html": (
-                reverse("group_posts", kwargs={"slug": "test_group"})
-            ),
+            "group.html": reverse("group_posts", kwargs={"slug": "test_group"}),
             "new_post.html": reverse("new_post"),
-            "profile.html": (
-                reverse("profile",
-                        kwargs={"username": PostPagesTests.user.username})
-            ),
+            "profile.html": reverse("profile", kwargs={"username": username}),
             "post.html": (
                 reverse("post",
-                        kwargs={"username": PostPagesTests.user.username,
-                                "post_id": PostPagesTests.post.id})
+                        kwargs={"username": username, "post_id": post_id})
             ),
         }
 
@@ -84,64 +78,6 @@ class PostPagesTests(TestCase):
             with self.subTest(template=template):
                 response = self.authorized_client.get(reverse_name)
                 self.assertTemplateUsed(response, template)
-
-    def test_index_page_show_correct_context(self):
-        response = self.guest_client.get(reverse("index"))
-
-        post_fields = {
-            "text": models.TextField,
-            "pub_date": models.DateTimeField,
-            "author": models.ForeignKey,
-            "group": models.ForeignKey,
-            "image": models.ImageField,
-        }
-
-        for value, expected in post_fields.items():
-            with self.subTest(value=value):
-                post_field = (response.context.get("page")[0]
-                              ._meta.get_field(value))
-                self.assertIsInstance(post_field, expected)
-
-    def test_group_post_page_show_correct_context(self):
-        response = self.guest_client.get(
-                        reverse("group_posts", kwargs={"slug": "test_group"}))
-
-        post_fields = {
-            "text": models.TextField,
-            "pub_date": models.DateTimeField,
-            "author": models.ForeignKey,
-            "group": models.ForeignKey,
-            "image": models.ImageField,
-        }
-        for value, expected in post_fields.items():
-            with self.subTest(value=value):
-                post_field = (response.context.get("page")[0]
-                              ._meta.get_field(value))
-                self.assertIsInstance(post_field, expected)
-
-        group_fields = {
-            "title": models.CharField,
-            "slug": models.SlugField,
-            "description": models.TextField,
-        }
-        for value, expected in group_fields.items():
-            with self.subTest(value=value):
-                group_field = (response.context.get("group")
-                               ._meta.get_field(value))
-                self.assertIsInstance(group_field, expected)
-
-    def test_new_post_page_show_correct_context(self):
-        response = self.authorized_client.get(reverse("new_post"))
-
-        form_fields = {
-            "text": forms.fields.CharField,
-            "group": forms.models.ModelChoiceField,
-        }
-
-        for value, expected in form_fields.items():
-            with self.subTest(value=value):
-                form_field = response.context.get("form").fields.get(value)
-                self.assertIsInstance(form_field, expected)
 
     def test_pages_show_correct_context_with_group(self):
         urls = (
@@ -154,14 +90,13 @@ class PostPagesTests(TestCase):
                 response = self.guest_client.get(url)
                 post = response.context.get("page")[0]
 
-                self.assertEqual(post.id, 1)
-                self.assertEqual(post.text, "Запись номер 1")
-                self.assertEqual(post.group, PostPagesTests.group)
+                self.assertEqual(post.id, PostPagesTests.post.id)
+                self.assertEqual(post.text, PostPagesTests.post.text)
+                self.assertEqual(post.group, PostPagesTests.post.group)
                 self.assertEqual(post.image, PostPagesTests.post.image)
 
     def test_group_post_page_show_correct_context_different_group(self):
         Group.objects.create(
-            id=2,
             title="Группа номер 2",
             slug="second_group"
         )
@@ -174,23 +109,11 @@ class PostPagesTests(TestCase):
     def test_profile_page_show_correct_context(self):
         response = self.guest_client.get(f"/{PostPagesTests.user.username}/")
 
-        post_fields = {
-            "text": models.TextField,
-            "pub_date": models.DateTimeField,
-            "author": models.ForeignKey,
-            "group": models.ForeignKey,
-            "image": models.ImageField,
-        }
-
         post = response.context.get("page")[0]
-        for value, expected in post_fields.items():
-            with self.subTest(value=value):
-                post_field = (post._meta.get_field(value))
-                self.assertIsInstance(post_field, expected)
 
-        self.assertEqual(post.id, 1)
-        self.assertEqual(post.text, "Запись номер 1")
-        self.assertEqual(post.group, PostPagesTests.group)
+        self.assertEqual(post.id, PostPagesTests.post.id)
+        self.assertEqual(post.text, PostPagesTests.post.text)
+        self.assertEqual(post.group, PostPagesTests.post.group)
         self.assertEqual(post.image, PostPagesTests.post.image)
 
         author = response.context.get("author")
@@ -203,23 +126,11 @@ class PostPagesTests(TestCase):
         response = self.guest_client.get(
             f"/{PostPagesTests.user.username}/{PostPagesTests.post.id}/")
 
-        post_fields = {
-            "text": models.TextField,
-            "pub_date": models.DateTimeField,
-            "author": models.ForeignKey,
-            "group": models.ForeignKey,
-            "image": models.ImageField,
-        }
-
         post = response.context.get("post")
-        for value, expected in post_fields.items():
-            with self.subTest(value=value):
-                post_field = (post._meta.get_field(value))
-                self.assertIsInstance(post_field, expected)
 
-        self.assertEqual(post.id, 1)
-        self.assertEqual(post.text, "Запись номер 1")
-        self.assertEqual(post.group, PostPagesTests.group)
+        self.assertEqual(post.id, PostPagesTests.post.id)
+        self.assertEqual(post.text, PostPagesTests.post.text)
+        self.assertEqual(post.group, PostPagesTests.post.group)
         self.assertEqual(post.image, PostPagesTests.post.image)
 
         author = response.context.get("author")
@@ -232,16 +143,6 @@ class PostPagesTests(TestCase):
         response = self.authorized_client.get(
             f"/{PostPagesTests.user.username}/{PostPagesTests.post.id}/edit/")
 
-        form_fields = {
-            "text": forms.fields.CharField,
-            "group": forms.models.ModelChoiceField,
-        }
-
-        for value, expected in form_fields.items():
-            with self.subTest(value=value):
-                form_field = response.context.get("form").fields.get(value)
-                self.assertIsInstance(form_field, expected)
-
         post = response.context.get("post")
         self.assertEqual(post.author.username, PostPagesTests.user.username)
         self.assertEqual(post.id, PostPagesTests.post.id)
@@ -249,8 +150,10 @@ class PostPagesTests(TestCase):
     def test_index_page_show_correct_context_with_cache(self):
         reverse_index = reverse('index')
         initial_response = self.authorized_client.get(reverse_index)
-        PostPagesTests.post.text = "123123"
-        PostPagesTests.post.save()
+        Post.objects.create(
+            text="new post cache",
+            author=PostPagesTests.user
+        )
         response_with_cache = self.authorized_client.get(reverse_index)
 
         self.assertHTMLEqual(str(initial_response.content),
@@ -291,7 +194,7 @@ class PostPagesTests(TestCase):
                                          author=author).exists()
         self.assertFalse(followed)
 
-    def test_follow_page_correct_context(self):
+    def test_follow_page_correct_context_for_subscriber(self):
         author = User.objects.create_user(username="SomeAuthor")
         post_text = "Запись отобразится у подписчиков"
         Post.objects.create(
@@ -304,6 +207,15 @@ class PostPagesTests(TestCase):
 
         self.assertEqual(post.text, post_text)
 
+    def test_follow_page_correct_context_for_nonsubscriber(self):
+        author = User.objects.create_user(username="SomeAuthor")
+        post_text = "Запись отобразится у подписчиков"
+        Post.objects.create(
+            text=post_text,
+            author=author
+        )
+        Follow.objects.create(user=PostPagesTests.user, author=author)
+
         non_subscriber = User.objects.create_user(username="non_subscriber")
         non_subscriber_client = Client()
         non_subscriber_client.force_login(non_subscriber)
@@ -314,7 +226,6 @@ class PostPagesTests(TestCase):
     def test_add_comment_authorized(self):
         author = User.objects.create_user(username="SomeAuthor")
         new_post = Post.objects.create(
-            id=4,
             text="Новая запись",
             author=author
         )
@@ -338,7 +249,6 @@ class PostPagesTests(TestCase):
     def test_add_comment_unauthorized(self):
         author = User.objects.create_user(username="SomeAuthor")
         new_post = Post.objects.create(
-            id=4,
             text="Новая запись",
             author=author
         )
@@ -353,6 +263,8 @@ class PostPagesTests(TestCase):
         response = self.guest_client.post(comment_url, follow=True,
                                           data=form_data)
 
-        self.assertRedirects(response,
-                             "/auth/login/?next=/SomeAuthor/4/comment/")
+        self.assertRedirects(
+            response,
+            f"/auth/login/?next=/SomeAuthor/{new_post.id}/comment/"
+        )
         self.assertEqual(new_post.comments.count(), 0)

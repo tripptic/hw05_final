@@ -13,12 +13,10 @@ class PostModelTest(TestCase):
         user = get_user_model().objects.create_user(username="TestTestov")
 
         cls.group = Group.objects.create(
-            id=1,
             title="Группа номер 1"
         )
 
         cls.post = Post.objects.create(
-            id=1,
             text="Запись номер 1",
             author=user
         )
