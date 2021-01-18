@@ -107,7 +107,9 @@ class PostPagesTests(TestCase):
         self.assertEqual(len(response.context.get("page")), 0)
 
     def test_profile_page_show_correct_context(self):
-        response = self.guest_client.get(f"/{PostPagesTests.user.username}/")
+        username = PostPagesTests.user.username
+        url = reverse("profile", kwargs={"username": username})
+        response = self.guest_client.get(url)
 
         post = response.context.get("page")[0]
 
@@ -123,8 +125,10 @@ class PostPagesTests(TestCase):
         self.assertEqual(paginator.count, 1)
 
     def test_post_page_show_correct_context(self):
-        response = self.guest_client.get(
-            f"/{PostPagesTests.user.username}/{PostPagesTests.post.id}/")
+        username = PostPagesTests.user.username
+        post_id = PostPagesTests.post.id
+        url = reverse("post", kwargs={"username": username, "post_id": post_id})
+        response = self.guest_client.get(url)
 
         post = response.context.get("post")
 
@@ -140,8 +144,11 @@ class PostPagesTests(TestCase):
         self.assertEqual(post_count, 1)
 
     def test_post_edit_page_show_correct_context(self):
-        response = self.authorized_client.get(
-            f"/{PostPagesTests.user.username}/{PostPagesTests.post.id}/edit/")
+        username = PostPagesTests.user.username
+        post_id = PostPagesTests.post.id
+        url = reverse("post_edit", kwargs={"username": username,
+                                           "post_id": post_id})
+        response = self.authorized_client.get(url)
 
         post = response.context.get("post")
         self.assertEqual(post.author.username, PostPagesTests.user.username)
