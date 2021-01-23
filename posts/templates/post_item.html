@@ -24,19 +24,20 @@
   
       <!-- Отображение ссылки на комментарии -->
       <div class="d-flex justify-content-between align-items-center">
+
         <div class="btn-group">
           {% if post.comments.exists %}
-          <div>
+          <medium class="p-2">
             Комментариев: {{ post.comments.count }}
-          </div>
+          </medium>
           {% endif %}
-          <a class="btn btn-sm btn-primary" href="{% url 'add_comment' post.author.username post.id %}" role="button">
-            Добавить комментарий
-          </a>
-  
+            <a class="btn btn-sm btn-primary p-2" href="{% url 'add_comment' post.author.username post.id %}" role="button">
+              Добавить комментарий
+            </a>
+          
           <!-- Ссылка на редактирование поста для автора -->
           {% if user == post.author %}
-          <a class="btn btn-sm btn-info" href="{% url 'post_edit' post.author.username post.id %}" role="button">
+          <a class="btn btn-sm btn-info p-2" href="{% url 'post_edit' post.author.username post.id %}" role="button">
             Редактировать
           </a>
           {% endif %}

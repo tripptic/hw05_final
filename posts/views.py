@@ -1,7 +1,10 @@
+from xxlimited import Null
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
 from django.contrib.auth import get_user_model
+from django.http import HttpResponseRedirect
+from django.urls import reverse
 
 from .models import Post, Group, Follow
 from .forms import PostForm, CommentForm
@@ -71,9 +74,11 @@ def profile(request, username):
         following = False
     following_count = author.following.count()
     follower_count = author.follower.count()
+    post_count = paginator.count
     context = {
         "author": author,
         "page": page,
+        "post_count": post_count,
         "paginator": paginator,
         "following": following,
         "following_count": following_count,
@@ -87,6 +92,10 @@ def post_view(request, username, post_id):
     post_count = author.posts.count()
     post = get_object_or_404(Post, id=post_id)
     comments = post.comments.all()
+    if request.user.is_authenticated:
+        following = author.following.filter(user=request.user).exists()
+    else:
+        following = False
     following_count = author.following.count()
     follower_count = author.follower.count()
     context = {
@@ -95,6 +104,7 @@ def post_view(request, username, post_id):
         "post_count": post_count,
         "comments": comments,
         "form": CommentForm(),
+        "following": following,
         "following_count": following_count,
         "follower_count": follower_count,
     }
@@ -144,11 +154,13 @@ def profile_follow(request, username):
     author = get_object_or_404(User, username=username)
     if user != author and not user.follower.filter(author=author).exists():
         Follow.objects.create(user=user, author=author)
-    return redirect("profile", username=username)
+    back_url = reverse("profile", kwargs={"username": username})
+    return redirect(request.META.get('HTTP_REFERER', back_url))
 
 
 @login_required
 def profile_unfollow(request, username):
     author = get_object_or_404(User, username=username)
     Follow.objects.filter(user=request.user, author=author).delete()
-    return redirect("profile", username=username)
+    back_url = reverse("profile", kwargs={"username": username})
+    return redirect(request.META.get('HTTP_REFERER', back_url))
